@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WSET D3 – Past Tasting Papers</title>
+<style>
+  :root {
+    --burgundy: #6b1a2a;
+    --gold: #c9a84c;
+    --cream: #faf7f2;
+    --text: #1a1a1a;
+    --muted: #5a5a5a;
+    --border: #ddd4c8;
+    --card-bg: #ffffff;
+    --tag-bg: #f0ebe3;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+  /* Header */
+  header {
+    background: var(--burgundy);
+    color: #fff;
+    padding: 24px 32px 20px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  header svg { flex-shrink: 0; }
+  header h1 { font-size: 1.5rem; font-weight: normal; letter-spacing: 0.02em; }
+  header p { font-size: 0.8rem; color: rgba(255,255,255,0.65); margin-top: 4px; font-family: sans-serif; }
+
+  /* Controls */
+  .controls {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  }
+  .controls input, .controls select {
+    font-size: 0.85rem;
+    font-family: sans-serif;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 12px;
+    background: var(--cream);
+    color: var(--text);
+    outline: none;
+  }
+  .controls input { width: 240px; }
+  .controls input:focus, .controls select:focus { border-color: var(--burgundy); }
+  .controls label { font-family: sans-serif; font-size: 0.8rem; color: var(--muted); }
+  .controls .count { margin-left: auto; font-family: sans-serif; font-size: 0.8rem; color: var(--muted); }
+
+  /* View toggle */
+  .view-toggle { display: flex; gap: 4px; margin-left: 4px; }
+  .view-toggle button {
+    border: 1px solid var(--border); background: var(--cream); cursor: pointer;
+    border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; font-family: sans-serif;
+    color: var(--muted); transition: all .15s;
+  }
+  .view-toggle button.active { background: var(--burgundy); color: #fff; border-color: var(--burgundy); }
+
+  /* Main content */
+  main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+
+  /* ── GRID / CARD VIEW ── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    transition: box-shadow .15s;
+  }
+  .card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.10); }
+
+  .card-header {
+    background: var(--burgundy);
+    color: #fff;
+    padding: 12px 16px;
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .card-header .sitting { font-size: 1.05rem; letter-spacing: 0.03em; }
+  .card-header .sitting span { color: var(--gold); font-weight: bold; }
+
+  .card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .flight {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .flight-header {
+    background: var(--tag-bg);
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    font-family: sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--burgundy);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .flight-theme {
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+  .flight-wines { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .wine-item { display: flex; gap: 8px; align-items: flex-start; }
+  .wine-num {
+    font-size: 0.65rem; font-family: sans-serif; font-weight: 700;
+    color: var(--burgundy); opacity: .7;
+    min-width: 18px; padding-top: 2px;
+  }
+  .wine-text { font-size: 0.8rem; line-height: 1.45; }
+  .wine-region { color: var(--muted); font-size: 0.73rem; }
+  .wine-name { color: var(--text); }
+
+  /* ── TABLE VIEW ── */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); background: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; font-family: sans-serif; }
+  thead tr { background: var(--burgundy); color: #fff; }
+  th { padding: 10px 12px; text-align: left; white-space: nowrap; font-weight: 600; letter-spacing: 0.03em; font-size: 0.72rem; }
+  td { padding: 8px 12px; vertical-align: top; border-bottom: 1px solid var(--border); line-height: 1.4; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #fafaf9; }
+  tr:hover td { background: #f5ede8; }
+  td.sitting { white-space: nowrap; font-weight: 600; color: var(--burgundy); }
+  td.theme { color: var(--muted); font-style: italic; font-size: 0.75rem; }
+
+  /* No results */
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); font-family: sans-serif; }
+  .empty svg { opacity: .3; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <path d="M18 4 C10 4 6 10 6 16 C6 22 10 27 18 28 C26 27 30 22 30 16 C30 10 26 4 18 4Z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+    <line x1="18" y1="28" x2="18" y2="33" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+    <line x1="13" y1="33" x2="23" y2="33" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+    <path d="M12 16 Q18 20 24 16" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/>
+  </svg>
+  <div>
+    <h1>WSET Diploma – Unit 3 Tasting Past Papers</h1>
+    <p>Wines of the World · 2004 – 2026 · 44 sittings</p>
+  </div>
+</header>
+
+<div class="controls">
+  <input type="search" id="search" placeholder="Search wines, regions, producers…"/>
+  <select id="filterGrape">
+    <option value="">All common grapes</option>
+  </select>
+  <select id="filterYear">
+    <option value="">All years</option>
+  </select>
+  <div class="view-toggle">
+    <button id="btnCard" class="active" onclick="setView('card')">Cards</button>
+    <button id="btnTable" onclick="setView('table')">Table</button>
+  </div>
+  <span class="count" id="count"></span>
+</div>
+
+<main>
+  <div id="output"></div>
+</main>
+
+<script>
+const RAW = [{"month":"May","year":2026,"commonGrape":"Grenache","wine1":"Australia - South Australia\nThistledown 'Old Vine' Grenache 2023","wine2":"Spain - Catalunya\nTorres 'De Casta' Rosado 2024","wine3":"France - Rhône (South), Gigondas\nDomaine la Bouïssière 2022","commonLink":"South Africa","wine4":"South Africa - Robertson\nKlippenkop Pinotage 2023","wine5":"South Africa - Western Cape\nLismore Estate Chenin Blanc 2022","wine6":"South Africa - Walker Bay\nAtaraxia Sauvignon Blanc 2025","q3Theme":"Quality assessment of Piemonte wines","wine7":"Italy - Piemonte\nPio Cesare Dolcetto d'Alba 2024","wine8":"Italy - Piemonte\nVigne Marina Coppi 'Sant'Andrea' Barbera 2022","wine9":"Italy - Piemonte\nG.D. Vajra Barolo Ravera 2020","q4Theme":"mixed bag - aromatic whites","wine10":"France - Alsace\nSchlumberger 'Les Princes Abbés' Gewurztraminer 2023","wine11":"Argentina - Salta\nLuigi Bosca Torrontés 2025","wine12":"Germany - Nahe\nDönnhoff Norheimer Kirschheck Riesling Spätlese 2023"},{"month":"October","year":2025,"commonGrape":"Sauvignon Blanc","wine1":"France - Loire Valley\nDomaine Chatelain 'Les Chailloux Silex' Pouilly Fumé 2023","wine2":"USA - Napa Valley\nGroth Sauvignon Blanc 2023","wine3":"New Zealand - Marlborough\nEsk Valley Estate Sauvignon Blanc 2024","commonLink":"Australia","wine4":"Australia - South Australia (Clare Valley)\nGrosset 'Polish Hill' Riesling 2024","wine5":"Australia - South Australia (Coonawarra)\nPetaluma 'White Label' Cabernet Sauvignon 2019","wine6":"Australia - New South Wales (Hunter Valley)\nTyrrell's Vat 1 Semillon 2018","q3Theme":"Quality assessment of Beaujolais","wine7":"France - Beaujolais\nGeorges Duboeuf, Beaujolais Villages 'Domaine Des Trois Vallons' 2022","wine8":"France - Beaujolais\nMaison Jean Loron, Domaine de Cornillac Beaujolais 2023","wine9":"France - Beaujolais (Moulin-à-Vent)\nDomaine de Colette, Moulin-à-Vent 'Le Mont' 2024","q4Theme":"mixed bag","wine10":"Portugal - Vinho Verde DOC\nQuintas do Homem, Vale do Homem Branco 2024","wine11":"Spain - Rioja\nCampo Viejo Reserva 2018","wine12":"Italy - Veneto\nMonte del Frà, 'Lena di Mezzo' Valpolicella Ripasso Classico 2021"},{"month":"May","year":2025,"commonGrape":"Chardonnay","wine1":"USA - California (Carneros)\nHudson Wines Estate Grown Chardonnay 2021","wine2":"Australia - South Eastern Australia\nCasella Family [Yellow Tail] Chardonnay 2024","wine3":"Argentina - Mendoza\nViña Doña Paula 'Altaluvia' Chardonnay 2020","commonLink":"Austria","wine4":"Austria - Burgenland\nHeidi Schröck & Söhne Blaufränkisch 2022","wine5":"Austria - Burgenland\nFeiler-Artinger 'Ruster Ausbruch' 2017","wine6":"Austria - Kamptal\nWeingut Fred Loimer 'Ried Loiserberg' 1er Grüner Veltliner 2022","q3Theme":"Quality assessment of Bordeaux","wine7":"France - Bordeaux (Lalande de Pomerol)\nCh. Siaurac 'Plaisir de Siaurac' 2022","wine8":"France - Bordeaux (Pauillac)\nCh. Pichon Longueville Comtesse de Lalande 'Reserve' 2019","wine9":"France - Bordeaux\nCh. Haut-Rian Blanc Sec 2023","q4Theme":"mixed bag","wine10":"Chile - Valle Central\nCosta Vera / Indómita Carmenère 2024","wine11":"USA - Mendocino\nJackson Family 'Edmeades' Zinfandel 2022","wine12":"Spain - Catalunya\nBodegas Torres 'De Casta' Rosado 2022"},{"month":"October","year":2024,"commonGrape":"Pinot Noir","wine1":"New Zealand - Martinborough\nEscarpment Wines 'Te Rehua' Pinot Noir 2020","wine2":"Germany - Pfalz\nWeingut Friedrich Becker 'Family' Pinot Noir 2020","wine3":"USA - California\nDe Loach 'Heritage Reserve' Pinot Noir 2022","commonLink":"Italy","wine4":"Italy - Piedmont\nTerre Antiche Gavi di Gavi 2023","wine5":"Italy - Piedmont\nTenuta La Volta, Cabutto Barolo 2020","wine6":"Italy - Campania\nDonna Elvira 'Settemazze' Aglianico 2018","q3Theme":"Quality assessment of Languedoc wines","wine7":"France - Languedoc\nM. Chapoutier 'Marius' Rosé 2023","wine8":"France - Languedoc\nDomaine Guillemarine, Picpoul de Pinet 2023","wine9":"France - Languedoc\nChâteau de Montmal, Fitou 2021","q4Theme":"mixed bag","wine10":"South Africa - Constantia\nSteenberg Sauvignon Blanc 2023","wine11":"Australia - Riverina\nDe Bortoli 'Noble One' 2020","wine12":"France - Loire Valley\nBaumard 'Clos du Papillon' 2019"},{"month":"May","year":2024,"commonGrape":"Riesling","wine1":"Germany - Mosel\nWeingut Dr Loosen, Wehlener Sonnenuhr Riesling Spätlese 2020","wine2":"Australia - Eden Valley\nCorryton Burge Riesling 2022","wine3":"France - Alsace\nFamille Hugel 'Classic' Riesling 2022","commonLink":"Argentina","wine4":"Argentina - Patagonia\nBodega Noemía 'A Lisa' 2022","wine5":"Argentina - Catamarca\nAguijón de Abeja 'Obrera' Bonarda 2020","wine6":"Argentina - Salta\nFamilia Zuccardi 'Serie A' Torrontés 2020","q3Theme":"Quality assessment of Burgundy","wine7":"France - Burgundy (St Aubin)\nGérard Thomas & Filles, St Aubin 'Champ Tirant' 2021","wine8":"France - Burgundy (Hautes Côtes de Beaune)\nGilbert et Christine Felettig, Hautes Côtes de Beaune 'en Vallerot' 2021","wine9":"France - Burgundy (Nuits-St-Georges 1er Cru)\nDomaine Jean Chavenet, Nuits St Georges 1er Cru 'Les Perrières' 2021","q4Theme":"mixed bag","wine10":"USA - California\nBlossom Hill White Zinfandel 2022","wine11":"Greece - Crete\nAyrarakis 'Vóila' Assyrtiko","wine12":"South Africa - Stellenbosch\nKanonkop 'Kadette' Pinotage 2021"},{"month":"October","year":2023,"commonGrape":"Syrah/Shiraz","wine1":"France - Rhône Valley (North), Cornas\nDomaine Colombo 'Terres Brulées' Cornas 2019","wine2":"Australia - South Australia (Langhorne Creek)\nBremerton Wines, Selkirk Shiraz 2019","wine3":"New Zealand - Hawke's Bay\nBilancia Wines Syrah 2019","commonLink":"Spain","wine4":"Spain - Rioja\nViña Tondonia Reserva Rioja 2011","wine5":"Spain - Rías Baixas\nLagar de Pintos Albariño 2022","wine6":"Spain - Priorat\nAlvaro Palacios 'Camins del Priorat' 2021","q3Theme":"Quality assessment of Veneto (Valpolicella family) wines","wine7":"Italy - Veneto\nPieropan Soave Classico 2022","wine8":"Italy - Veneto\nCamerani, 'Corte Sant'Alda Ca' Fiui' Valpolicella 2021","wine9":"Italy - Veneto\nTenuta Lena di Mezzo (Monte del Frà) 'Scarnocchio' Amarone della Valpolicella Classico Riserva 2017","q4Theme":"mixed bag - whites","wine10":"USA - Sonoma County\nRodney Strong Chardonnay 2019","wine11":"Argentina - Mendoza\nLuigi Bosca 'La Linda' Torrontés 2022","wine12":"New Zealand - Marlborough\nVilla Maria Reserve Pinot Gris 2021"},{"month":"May","year":2023,"commonGrape":"Merlot","wine1":"Chile\nViña Errázuriz Estate Reserva Merlot 2021","wine2":"USA - California\nBonterra Organic Estates Merlot 2019","wine3":"France - Bordeaux (Pomerol)\nChâteau Plince 2015","commonLink":"Germany","wine4":"Germany - Rheinhessen\nWeingut Gunderloch, Nackenheimer Rothenberg Grosses Gewächs 2021","wine5":"Germany - Franken\nWeingut Hans Wirsching, Iphöfer Julius-Echter-Berg Silvaner Grosses Gewächs 2018","wine6":"Germany - Württemberg\nWeingut Gerhard Aldinger, Untertürkheimer Gips Spätburgunder Erste Lage 2020","q3Theme":"Quality assessment of New Zealand (Marlborough) wines","wine7":"New Zealand - Marlborough\nNautilus Estate Chardonnay 2020","wine8":"New Zealand - Marlborough\nVilla Maria Reserve Pinot Noir 2020","wine9":"New Zealand - Marlborough\nKim Crawford 'Spitfire' Small Parcels Sauvignon Blanc 2021","q4Theme":"mixed bag","wine10":"South Africa - Stellenbosch\nDeMorgenzon Reserve Chenin Blanc 2019","wine11":"Italy - Piemonte\nCantina Ratti, Renato Ratti Barolo Marcenasco 2018","wine12":"France - Bordeaux (Sauternes)\nJ&G Perromat, Château le Juge 'Les Mingets' 2019"},{"month":"October","year":2022,"commonGrape":"Pinot Gris/Grigio","wine1":"Italy - Friuli\nCantina Jermann-Ruttars, Jermann Pinot Grigio 2021","wine2":"New Zealand - Marlborough\nVilla Maria Reserve Pinot Gris 2020","wine3":"France - Alsace\nFamille Hugel Estate Pinot Gris 2019","commonLink":"Chile","wine4":"Chile - Valle de Aconcagua\nViña TerraPura 'Hidden Bay' Sauvignon Blanc 2021","wine5":"Chile - Valle de Aconcagua\nViña Errázuriz 'Max' Carmenère 2019","wine6":"Chile - Valle de Aconcagua\nViña Errázuriz 'Don Maximiano Founder's Reserve' 2017","q3Theme":"Quality assessment of Rhône wines","wine7":"France - Rhône\nE. Guigal Condrieu 2020","wine8":"France - Rhône\nStéphane Robert, Domaine du Tunnel Cornas 2019","wine9":"France - Rhône\nDomaine des Amphores 'Les 7 Lieux' Saint-Joseph 2019","q4Theme":"mixed bag","wine10":"Germany - Mosel\nWeingut Dr Loosen, Erdener Treppchen Spätlese 2018","wine11":"Spain - Rueda\nBodegas Ramón Bilbao 'The Journey Collection' Rueda Verdejo 2020","wine12":"Australia - Margaret River\nVasse Felix 'Filius' Cabernet Sauvignon 2019"},{"month":"May","year":2022,"commonGrape":"Chardonnay","wine1":"New Zealand - Marlborough\nDog Point Vineyards Chardonnay 2018","wine2":"South Africa - Franschhoek\nChamonix Wine Farm 'Cape Chamonix' Chardonnay 2019","wine3":"Chile - Cachapoal\nViña Los Boldos 'Chateau Los Boldos Tradition Reserve' Chardonnay 2021","commonLink":"USA","wine4":"USA - Oregon\nDomaine Drouhin Oregon, Dundee Hills Pinot Noir 2018","wine5":"USA - Washington\nChateau Ste. Michelle 'Indian Wells' Cabernet Sauvignon 2018","wine6":"USA - California\nGnarly Head Old Vine Zinfandel 2019","q3Theme":"Quality assessment of Loire Valley wines","wine7":"France - Loire\nVincent Chatelain, Domaine Chatelain 'Les Chailloux' Pouilly Fumé 2020","wine8":"France - Loire\nJean-Claude & Didier Aubert, Vouvray Demi-Sec 2019","wine9":"France - Loire\nEARL Fabrice Gasnier 'Vieilles Vignes' Chinon Rouge 2019","q4Theme":"mixed bag","wine10":"France - Provence\nCaves d'Esclans, Côtes de Provence Rosé 'Whispering Angel' 2021","wine11":"Italy - Sicily\nTenimenti Zabù 'Il Passo Verde' Nero d'Avola 2020","wine12":"Greece - Naoussa\nKtima Foundi 'Naoussaia' 2016"},{"month":"February","year":2022,"commonGrape":"Cabernet Sauvignon","wine1":"Australia - Coonawarra\nBalnaves of Coonawarra Cabernet Sauvignon 2015","wine2":"France - Bordeaux\nChâteau de Fieuzal 2014","wine3":"Chile - Colchagua\nSanta Carolina 'Reserva' Cabernet Sauvignon 2019","commonLink":"Austria","wine4":"Austria - Kamptal\nSchloss Gobelsburg 'Ried Lamm' Grüner Veltliner 2019","wine5":"Austria - Burgenland\nWeingut Prieler 'Ried Goldberg' Blaufränkisch 2015","wine6":"Austria - Burgenland\nWeingut Helmut Lang Trockenbeerenauslese 'Sämling 88' 2018","q3Theme":"Quality assessment of Rioja","wine7":"Spain - Rioja\nBodegas Izadi Reserva 2015","wine8":"Spain - Rioja\nMarqués de Riscal Gran Reserva 2015","wine9":"Spain - Rioja\nMarqués de la Concordia 'Paternina Monte Haro' Tempranillo","q4Theme":"mixed bag","wine10":"France - Loire Valley\nDomaines Jérôme Choblet 'Clos de la Fine' Muscadet Sur Lie 2020","wine11":"New Zealand - Marlborough\n'The Crossings' Awatere Valley Sauvignon Blanc 2020","wine12":"USA - California\nHartford Family Winery 'Hartford Court' Russian River Chardonnay 2018"},{"month":"October","year":2021,"commonGrape":"Pinot Noir","wine1":"France - Burgundy\nMaison Ambroise, Bertrand Ambroise Nuits-Saint-Georges 2014","wine2":"Chile - Leyda Valley\nSanta Carolina Pinot Noir Reserva 2019","wine3":"New Zealand - Marlborough\nAuntsfield Estate, Single Vineyard Pinot Noir 2019","commonLink":"Portugal","wine4":"Portugal - Vinho Verde\nAdega Cooperativa de Ponte de Lima 2020","wine5":"Portugal - Douro\nSogrape, Casa Ferreirinha 'Callabriga' Douro 2018","wine6":"Portugal - Dão\nSogrape 'Duque de Viseu' Tinto 2019","q3Theme":"Quality assessment of Alsace wines","wine7":"France - Alsace\nHugel & Fils Estate Riesling 2016","wine8":"France - Alsace\nDomaines Schlumberger 'Les Princes Abbés' Pinot Gris 2017","wine9":"France - Alsace\nHugel & Fils Estate Gewurztraminer 2016","q4Theme":"mixed bag","wine10":"South Africa - Stellenbosch\nGlenelly Estate 'The Glass Collection' Cabernet Sauvignon 2018","wine11":"USA - Lodi, California\nScotto Family Wines, Lodi Old Vine Zinfandel 2017","wine12":"Hungary - Tokaj\nGrand Tokaj 'Crown Estates' Tokaji Aszú 6 Puttonyos 2013"},{"month":"May","year":2021,"commonGrape":"Sauvignon Blanc","wine1":"France - Loire Valley\nVincent Chatelain, Dom. Chatelain 'Les Chailloux' Pouilly Fumé 2018","wine2":"South Africa - Stellenbosch\nJordan Wines 'The Outlier' Sauvignon Blanc 2017","wine3":"New Zealand - Marlborough\nKim Crawford 'Small Parcels' Sauvignon Blanc 2019","commonLink":"France","wine4":"France - Rhône Valley\nDavid Reynaud, Crozes-Hermitage 'Beaumont' 2018","wine5":"France - Bordeaux\nChâteau Beaumont 2016","wine6":"France - Burgundy\nDomaine Rossignol-Trapet, Gevrey-Chambertin Vieilles Vignes 2017","q3Theme":"Quality assessment of Mosel Riesling","wine7":"Germany - Mosel\nWeingut Max Ferdinand Richter, Brauneberger Juffer Sonnenuhr Auslese 2019","wine8":"Germany - Mosel\nWeingut Dr. Loosen 'Dr. L' Riesling 2019","wine9":"Germany - Mosel\nWeingut Max Ferdinand Richter, Brauneberger Juffer Sonnenuhr Spätlese 2019","q4Theme":"mixed bag","wine10":"South Africa - Stellenbosch\nKaapzicht Estate Pinotage 2018","wine11":"Argentina - Uco Valley\nAltos Las Hormigas Malbec Reserve 2017","wine12":"Australia - Hunter Valley\nTyrrell's Hunter Valley Semillon 2019"},{"month":"January","year":2021,"commonGrape":"Riesling","wine1":"France - Alsace\nHugel & Fils Classic Riesling 2018","wine2":"Australia - Eden Valley\nPeter Lehmann Wines 'Wigan' Riesling 2013","wine3":"Germany - Mosel\nWeingut Dr. Loosen, Erdener Treppchen Riesling Spätlese 2017","commonLink":"South Africa","wine4":"South Africa - Constantia\nKlein Constantia Estate Sauvignon Blanc 2019","wine5":"South Africa - Stellenbosch\nZevenwacht Wine Estate '7even' Pinotage 2017","wine6":"South Africa - Stellenbosch\nTokara Wine Estate 'Reserve Collection' Syrah 2016","q3Theme":"Quality assessment of Burgundy","wine7":"France - Burgundy\nDomaine Alain Gautheron, Chablis Vieilles Vignes 2017","wine8":"France - Burgundy\nDomaine Saumaize-Michelin, Pouilly-Fuissé 'Pentacrine' 2017","wine9":"France - Burgundy\nDomaine Ragot, Givry 1er Cru 'La Grande Berge' 2017","q4Theme":"mixed bag","wine10":"Australia - Coonawarra\nBalnaves of Coonawarra Cabernet Sauvignon 2015","wine11":"Spain - Rías Baixas\nBodegas Forjas del Salnés, Rodrigo Méndez 'Cíes' 2019","wine12":"Italy - Piemonte\nCantina Ratti, Ratti Barolo Marcenasco 2015"},{"month":"October","year":2020,"commonGrape":"Chenin Blanc","wine1":"South Africa - Stellenbosch\nDeMorgenzon Reserve Chenin Blanc 2018","wine2":"France - Loire\nDomaine Cady, Coteaux du Layon Saint-Aubin 2018","wine3":"France - Loire (Touraine)\nDomaine de la Grange Tiphaine, Touraine 'Bel Air' 2018","commonLink":"Italy","wine4":"Italy - Veneto\nAzienda Agricola Monte Faustino, Amarone Classico 2015","wine5":"Italy - Marche\nFattoria La Monacesca, Verdicchio di Matelica 2018","wine6":"Italy - Tuscany\nFattoria Selvapiana 'Vigneto Bucerchiale' Chianti Rufina Riserva 2016","q3Theme":"Quality assessment of California wines","wine7":"USA - California\nDe Loach Vineyards, Russian River Valley Chardonnay 2018","wine8":"USA - California\nPine Ridge Vineyards, Napa Cabernet Sauvignon 2016","wine9":"USA - California\nHahn Family Wines 'Boneshaker' Old Vine Lodi Zinfandel 2016","q4Theme":"mixed bag","wine10":"Argentina - Mendoza\nKaiken Wines 'Terroir Series' Torrontés 2019","wine11":"France - Beaujolais\nChâteau de Poncié, Fleurie 'Le Pré Roi' 2016","wine12":"Spain - Rioja\nBodegas Izadi Reserva 2015"},{"month":"October","year":2019,"commonGrape":"Cabernet Sauvignon","wine1":"France - Bordeaux\nDomaines Audoy, Château Cos Labory 2010","wine2":"Chile - Rapel Valley\nCasas del Bosque Reserva Cabernet 2017","wine3":"Australia - Coonawarra\nBalnaves of Coonawarra Cabernet Sauvignon 2012","commonLink":"New Zealand","wine4":"New Zealand - Marlborough\nVidal Estate Sauvignon Blanc 2018","wine5":"New Zealand - Waipara\nTutton Sienko & Hill, Waipara West 'N Block' Chardonnay 2016","wine6":"New Zealand - Central Otago\nValli Vineyards, Bannockburn Vineyard Pinot Noir 2017","q3Theme":"Quality assessment of Piemonte wines","wine7":"Italy - Piemonte\nAzienda Agricola Tacchino, Gavi di Gavi 2018","wine8":"Italy - Piemonte\nAurelio Settimo, Dolcetto d'Alba 2016","wine9":"Italy - Piemonte\nPio Cesare Barolo 2014","q4Theme":"mixed bag - white/sweet wines","wine10":"France - Loire\nJérémie Huchet, Domaine de la Chauvinière 'L'Inattendu' Muscadet Sèvre et Maine Sur Lie","wine11":"Germany - Mosel\nDr. Loosen, Erdener Treppchen Riesling Kabinett 2017","wine12":"Hungary - Tokaj-Hegyalja\nGrand Tokaj 'Crown Estates' Tokaji Aszú 6 Puttonyos"},{"month":"January","year":2019,"commonGrape":"Pinot Noir","wine1":"Chile Leyda Valley Kalfu Kuda Pinot Noir 2017 - Viña Ventisquero Ltda.","wine2":"Gevrey-Chambertin 'La Justice' 2016\n Domaine Marc Roy","wine3":"New Zealand Central Otago\nValli Bannockburn Vineyard Pinot Noir 2016","commonLink":"Australia","wine4":"Journey Wines Yarra Valley Chardonnay 2015\n- The Jack Russell Wine Company","wine5":"Freya Eden Valley Riesling 2016\n- Sons of Eden","wine6":"Coonawarra\nMajella Cabernet Sauvignon 2013","q3Theme":"Quality assessment of Soave wines","wine7":"Soave\nAlpha Zeta Soave 2017","wine8":"Pieropan La Rocca Soave Classico 2016","wine9":"Inama 'Campo Dei Tovi' Soave Classico 2017","q4Theme":"mixed bag","wine10":"Languedoc\nDomaine Gaujal Picpoul de Pinet 2017","wine11":"La Rioja Alta 904 Gran Reserva 2009","wine12":"Bordeaux\nChâteau Cos Labory 2010"},{"month":"June","year":2018,"commonGrape":"Chardonnay","wine1":"Chablis Premier Cru Vaulorent 2015 Billaud-Simon","wine2":"Chile Cachapoal\nChateau los Boldos Tradition Reserve Chardonnay 2016 - Viña Los Boldos","wine3":"Adelaide Hills Shaw & Smith M3 Chardonnay 2015","commonLink":"Spain","wine4":"Rías Baixas\nMartín Códax Albariño 2016","wine5":"Rioja Viña Ardanza Reserva 2008 - La Rioja Alta S.A.","wine6":"Priorat Torres Salmos 2015","q3Theme":"Quality assessment of Rhône wines","wine7":"Côte-Rôtie 'Brune et Blonde de Guigal' 2013","wine8":"St-Joseph 2015 Guigal","wine9":"Crozes-Hermitage Domaine des Lises 2016 Maxime Graillot & Thomas Schmittel","q4Theme":"mixed bag","wine10":"South Africa Cederberg Sauvignon Blanc 2017","wine11":"California Freestone Vineyards Pinot Noir 2014 - Joseph Phelps Vineyard","wine12":"Australia New South Wales Noble One 2014 - De Bortoli Wines"},{"month":"January","year":2018,"commonGrape":"Riesling","wine1":"Alsace Domaine Bott-Geyl Riesling Les Elements 2015","wine2":"Clare Valley Mount Horrocks Watervale Riesling 2016","wine3":"Mosel Von Hövel Oberemmeler Hutte Auslese 2007","commonLink":"Italy","wine4":"Soave Terre di Monteforte 2016","wine5":"Brigaldara Recioto della Valpolicella Classico 2014","wine6":"Monte Faustino Amarone Classico 2012","q3Theme":"Quality assessment of Mendoza wines","wine7":"Mendoza Terroir Series Finca Orellana Trapiche 2011","wine8":"Mendoza Sierra Alta Malbec 2016","wine9":"Mendoza Malbec Finca Castro Barros Bodega Foster 2013","q4Theme":"mixed bag","wine10":"Burgundy Domaine Michel Niellon Chassagne Montrachet 1er Cru Champ Gains 2013","wine11":"La Rioja Alta 904 Gran Reserva 2007","wine12":"Marlborough Villa Maria Private Bin Sauvignon Blanc 2017"},{"month":"June","year":2017,"commonGrape":"Merlot","wine1":"Pomerol Chateau Plince 2010","wine2":"Colchagua Valley Luis Felipe Edwards Gran Reserva Merlot 2015","wine3":"Napa Valley Shafer Merlot 2014","commonLink":"Loire","wine4":"Langlois-Chateau Coteaux du Layon 2014","wine5":"Domaine des 3 Versants Muscadet Sur Lie 2016","wine6":"Chinon Rouge, Les Gravières 2015 Couly-Doutheil","q3Theme":"Quality assessment of California wines","wine7":"Sonoma Coast Joseph Phelps Chardonnay 2014 Freestone Vineyards","wine8":"Napa Valley Ca' Momi Chardonnay 2014","wine9":"California Gallo Chardonnay 2015","q4Theme":"mixed bag","wine10":"Clare Valley Pauletts Aged Release Riesling 2011","wine11":"Ribera del Duero Pesquera Crianza 2013 Bodegas Alejandro Fernández","wine12":"Tokaji Oremus 5 Puttonyos 2007"},{"month":"January","year":2017,"commonGrape":"","wine1":"","wine2":"","wine3":"","commonLink":"","wine4":"","wine5":"","wine6":"","q3Theme":"","wine7":"","wine8":"","wine9":"","q4Theme":"mixed bag","wine10":"","wine11":"","wine12":""},{"month":"June","year":2016,"commonGrape":"","wine1":"","wine2":"","wine3":"","commonLink":"","wine4":"","wine5":"","wine6":"","q3Theme":"","wine7":"","wine8":"","wine9":"","q4Theme":"mixed bag","wine10":"","wine11":"","wine12":""},{"month":"January","year":2016,"commonGrape":"Riesling","wine1":"Pauletts Polish Hill Riesling 2012","wine2":"Rheingau Rosenneck Spaetlese 2013","wine3":"Hugel Riesling 2008","commonLink":"South Africa","wine4":"The Raconteur Bush Vine Chenin Blanc 2014","wine5":"7even Pinotage 2013","wine6":"Stellenbosch Reserve Syrah","q3Theme":"Quality assessment of Beaujolais","wine7":"Moulin a vent La Roche 2011","wine8":"Fleurie Anre Colonge 2014","wine9":"Beaujolais Cuvee de Signerons NV (waitrose)","q4Theme":"mixed bag","wine10":"Rioja Blanco 2010","wine11":"Barefoot White Zinfandel NV (Waitrose)","wine12":"Barolo Rocche di Castiglione 2011"},{"month":"June","year":2015,"commonGrape":"Chardonnay","wine1":"Chablis 2013 (Domaine William Fevre)","wine2":"Hardys HRB Chardonnay 2011","wine3":"Wild Boy Chardonnay (USA)","commonLink":"New Zealand","wine4":"Martinborough Riesling 2011","wine5":"Central Otago Pinot Noir 2013","wine6":"Hawke's Bay Cabernet/ Merlot 2010","q3Theme":"Quality assessment of Rhone Valley wines","wine7":"Vacqueryras Cuvee Classique 2011","wine8":"Chateauneuf-du-paper 2012","wine9":"Cotes du Rhone 2012","q4Theme":"mixed bag","wine10":"Corteaux du Layon 2013","wine11":"Albarino (Fillaboa)","wine12":"Trapiche Gran Medalla Malbec 2011"},{"month":"January","year":2015,"commonGrape":"Cabernet Sauvignon","wine1":"Chile Central Valley 2013","wine2":"St-Estephe","wine3":"Frog's Leap","commonLink":"Alsace","wine4":"Trimbach Muscat Reserve","wine5":"Trimbach Pinot Gris Reserve 2011","wine6":"Trimbach Riesling Reserve 2011","q3Theme":"Quality assessment of Rioja","wine7":"Gran Reserva 2006","wine8":"Pomal Reserva 2009","wine9":"Crianza 2011","q4Theme":"mixed bag","wine10":"Muscadet Sevre et Maine Sur Lie 2013","wine11":"Riesling Dry (Mosel) 2010","wine12":"Marlborough Sauvignon Blanc 2014"},{"month":"June","year":2014,"commonGrape":"Pinot Noir","wine1":"Gevry-Chambertin 2008","wine2":"Spätburgunder 2011","wine3":"Central Otago Pinot Noir 2012","commonLink":"Loire","wine4":"Sancerre 2012","wine5":"Vouvray Sec 2011","wine6":"Chinon Les Gravieres 2012","q3Theme":"Quality assessment of Red Bordeaux","wine7":"Chateau Lamothe-Cissac 2008","wine8":"Chateau du Bois 2012","wine9":"Chateau Cos Labory 2010","q4Theme":"mixed bag","wine10":"Clare Valley Pauletts Polish Hill Aged Release Riesling 2007","wine11":"Ferrari-Carano Chardonnay 2011","wine12":"Tokaji Aszu 5 Puttonyos 2007"},{"month":"January","year":2014,"commonGrape":"Syrah","wine1":"Crozes-Hermitage Domaine Combier 2011","wine2":"Limari Syrah 2009","wine3":"Stellenbosch Syrah 2009","commonLink":"Piemonte","wine4":"Barolo Essenze 2008","wine5":"Masseria dei Carmelitani Gavi 2012","wine6":"Dolcetto d'Alba 2012","q3Theme":"Quality assessment of Australian Chardonnay","wine7":"Grant Burge Benchmark Chardonnay 2013","wine8":"Lindeman's Bin 65 Chardonnay 2013","wine9":"Petaluma Chardonnay 2010","q4Theme":"mixed bag","wine10":"Albariño (Filaboa) 2012","wine11":"Morey-St-Denis 2009","wine12":"Coteaux du Layon (Clos de La Soucherie 2001)"},{"month":"June","year":2013,"commonGrape":"Grenache","wine1":"Gran Feudo Rosado 2012","wine2":"Simon Hackett Old Vine Grenache 2010","wine3":"Chateauneuf du Pape 2011","commonLink":"Argentina","wine4":"Elementos Torrontes 2012","wine5":"Malbec 2010","wine6":"Cabernet Sauvignon 2011 (Santa Julia Seleccion)","q3Theme":"Quality assessment of White Burgundy","wine7":"Puligny-Montrachet Clos de la Garenne 2008","wine8":"Macon-Villages 2012","wine9":"Pouilly-Fuisse Les Crays 2010","q4Theme":"mixed bag","wine10":"Eden Valley The Contours Riesling 2007","wine11":"Fogdog Sonoma Coast Pinot Noir 2009","wine12":"Trimbach Gewurztraminer 2010"},{"month":"January","year":2013,"commonGrape":"Semillon","wine1":"Tyrell's Vat 1 2004","wine2":"Franschoek Semillon 2011","wine3":"Chateau Laville Sauternes 2008","commonLink":"USA","wine4":"Migration Chardonnay 2010","wine5":"De Loach Heritage Reserve Zinfandel 2009","wine6":"Frog's Leap 2007","q3Theme":"Quality assessment of German Riesling","wine7":"Rheingau Spaetlese Trocken 2009","wine8":"Kendermanms Special Edition Riesling 2011","wine9":"Nahe Diel Riesling Trocken Dorsheim Burgberg 2010","q4Theme":"mixed bag","wine10":"Condrieu 2010","wine11":"Beaujolais Villages 2011","wine12":"Valpolicella Ripasso 2009"},{"month":"June","year":2012,"commonGrape":"Chardonnay","wine1":"1er cru Chablis","wine2":"oaked Australian Chardonnay","wine3":"unexceptional Chilean Chardonnay","commonLink":"Spain","wine4":"good quality Rías Baixas","wine5":"Rioja Reserva","wine6":"good quality Priorat","q3Theme":"Quality assessment of Australian Shiraz","wine7":"basic Shiraz","wine8":"Barossa Shiraz (St Hallett Old Block 2008)","wine9":"Clare Valley Shiraz (Skillogalee)","q4Theme":"mixed bag","wine10":"Domaine des Martyrs Cotes de Provence Rose 2011","wine11":"Sybille Kuntz Riesling Trocken 2008","wine12":"Kim Crawford Marlborough Sauvignon Blanc 2011"},{"month":"January","year":2012,"commonGrape":"Pinot Noir","wine1":"Morey-St-Denis","wine2":"German Spätburgunder","wine3":"Wakefield Adelaide Hills","commonLink":"cool climate wines","wine4":"Muscadet Sur Lie","wine5":"NZ Sauvignon Blanc","wine6":"Mosel Riesling Kabinett","q3Theme":"Quality assessment of Alsace Pinot Gris","wine7":"SGN from BGS","wine8":"Domaine Bott-Geyl Sonnenglanz (very good)","wine9":"Hugel (basic)","q4Theme":"mixed bag (red)","wine10":"Chateau de Vierres Beaujolais Villages 2009","wine11":"Chinon Les Gravieres 2009","wine12":"Sonoma County Zinfandel 2009 (Seghesio)"},{"month":"June","year":2011,"commonGrape":"Sauvignon Blanc","wine1":"NZ Sauvignon Blanc","wine2":"Loire Sauvignon Blanc","wine3":"Fumé Blanc (Oaked)","commonLink":"Australia","wine4":"Yalumba Bush Vine Grenache","wine5":"Wynns Coonawarra Cabernet Sauvignon","wine6":"Peter Lehmann's Barossa Shiraz","q3Theme":"Quality assessment of Northern Rhône wines","wine7":"Crozes-Hermitage (£9)","wine8":"St Joseph (£14)","wine9":"Hermitage (£30)","q4Theme":"mixed bag - white wines","wine10":"St Michael-Eppan Pinot Grigio Alto Adige 2009","wine11":"Pouilly-Fuissé","wine12":"Tokaji 2000 5 Puttonyos"},{"month":"January","year":2011,"commonGrape":"Riesling","wine1":"German Mosel","wine2":"Australia / Clare Valley","wine3":"Alsace","commonLink":"South Africa","wine4":"Pinot Noir","wine5":"Pinotage","wine6":"Shiraz","q3Theme":"Quality level of Red Bordeaux","wine7":"Mouton Cadet","wine8":"mid priced Médoc","wine9":"Premium Margaux 1998","q4Theme":"mixed bag - white wines","wine10":"Han Estates California Chardonnay 2008","wine11":"Faldeos Nevados Argentinean Torrontés 2008","wine12":"Domaine Huet le Haut-Lieu Vouvray Sec 2008"},{"month":"June","year":2010,"commonGrape":"Cabernet Sauvignon","wine1":"Chilean Cabernet","wine2":"Chateau Batailley 2005","wine3":"Coonawarra Cabernet","commonLink":"Marlborough","wine4":"Marlborough Sauvignon Blanc","wine5":"Marlborough Pinot Gris","wine6":"Marlborough Chardonnay","q3Theme":"Quality assessment of Chianti","wine7":"Tenuta Fontodi Vigna Sorbo Chianti Classico Riserva 2006","wine8":"Sardelli Chianti 2008","wine9":"Villa Cerna Chianti Classico 2007","q4Theme":"mixed bag - white wines","wine10":"German Spätlese 2004","wine11":"Hunter Valley Semillon 2002","wine12":"Rías Baixas 2008"},{"month":"January","year":2010,"commonGrape":"Viognier","wine1":"Condrieu","wine2":"Vin de Pays Viognier","wine3":"California Viognier","commonLink":"Veneto","wine4":"Valpolicella (simple)","wine5":"Superiore Ripasso","wine6":"Amarone","q3Theme":"Quality assessment of White Burgundy","wine7":"Louis Jadot Chassagne-Montrachet 1er Cru 2007 (£50)","wine8":"Louis Jadot Bourgogne Chardonnay 2007 (£10)","wine9":"Louis Jadot Chassagne-Montrachet 2007 (£30)","q4Theme":"mixed bag - red","wine10":"Navarra Rosado 2008","wine11":"Spice Route Pinotage 2007","wine12":"Coonawarra Cabernet Sauvignon 2004"},{"month":"June","year":2009,"commonGrape":"Chenin Blanc","wine1":"Saumur Blanc","wine2":"Chaume","wine3":"South African Oaked Chenin Blanc","commonLink":"Rhône","wine4":"Hermitage","wine5":"Tavel Rosé","wine6":"Côtes du Rhône","q3Theme":"Quality assessment of Soave","wine7":"Pieropan Soave Classico 2007","wine8":"Pieropan La Rocca Soave Classico 2006","wine9":"Azienda Agricola Soave Classico 2007","q4Theme":"mixed bag - red","wine10":"Rioja Reserva 2000","wine11":"Barossa Shiraz","wine12":"Argentinian Malbec"},{"month":"January","year":2009,"commonGrape":"Pinot Noir","wine1":"Chilean Pinot Noir (Casablanca)","wine2":"German Spätburgunder","wine3":"Central Otago Pinot Noir","commonLink":"Loire Valley","wine4":"Vouvray Demi-Sec","wine5":"Sancerre","wine6":"Muscadet","q3Theme":"Quality assessment of Rioja","wine7":"(not given)","wine8":"","wine9":"","q4Theme":"mixed bag - white wines","wine10":"Entre Deux Mers","wine11":"Yellowtail Chardonnay","wine12":"Rheingau Riesling Kabinett"},{"month":"June","year":2008,"commonGrape":"Riesling","wine1":"Australian Riesling 2005 (Jim Barry's The Lodge Hill Riesling)","wine2":"Leon Beyer's Cuvée des Comtes d'Eguisheim 2002","wine3":"Bernkasteler Badstube Spätlese 2002","commonLink":"California","wine4":"Cuvasion Pinot Noir 2006","wine5":"Delicato Family Vineyards White Zinfandel 2006","wine6":"Seven Oaks Cabernet Sauvignon 2005","q3Theme":"Quality assessment of Nebbiolo (Piedmont)","wine7":"Barolo Ceretto 2000","wine8":"Nebbiolo d'Alba Cantine San Silvestro","wine9":"Fontanafredda Barolo","q4Theme":"mixed bag - white wines","wine10":"Argentinian Torrontés 2006","wine11":"Pouilly-Fumé 2006","wine12":"Murrieta's White Rioja Reserva Capellania 2003"},{"month":"January","year":2008,"commonGrape":"Chardonnay","wine1":"Chassagne-Montrachet Les Charrieres 2004","wine2":"Szoloskert Nagyrede Hungarian Chardonnay 2006","wine3":"Deakin Estate Australian Chardonnay 2006","commonLink":"Grenache (style)","wine4":"Rioja, Escencia Valdemar Rosé 2006","wine5":"Chapoutier's Châteauneuf-du-Pape 2005","wine6":"Pertaringa Two Gentlemans Grenache 2006","q3Theme":"Quality assessment of Beaujolais","wine7":"Jadot's Château de Jacques Clos de Rochegres 2003","wine8":"Domaine les Tours de Montmelas 2006","wine9":"Domaine du Vissoux Cuvée Traditionelle Vieilles Vignes 2006","q4Theme":"mixed bag - white wines","wine10":"South African Chenin Blanc","wine11":"Alsace Muscat","wine12":"Tokaji Aszú 5 Puttonyos"},{"month":"June","year":2007,"commonGrape":"Cabernet Sauvignon","wine1":"Domaine Boyar Bulgarian Cabernet Sauvignon NV","wine2":"Chateau La Tour de Byt Cru Bourgeois 2000","wine3":"Wynn's Coonawarra Cabernet Sauvignon 2001","commonLink":"Alsace","wine4":"Trimbach Riesling Reserve 2004","wine5":"Jean Sipp Pinot Gris Reserve 2005","wine6":"Dopff au Moulin Gewurztraminer 2005","q3Theme":"Quality assessment of Pinot Noir (Burgundy)","wine7":"Domaine Jean-Jacques Girard 2005 (basic)","wine8":"Louis Jadot Beaune Chouacheux 1999 (mature 1er Cru)","wine9":"Bertrand Ambroise Côte de Nuits Villages (modern style)","q4Theme":"mixed bag - white wines","wine10":"Vinho Verde, Quinta de Azevedo 2006","wine11":"Round Hill California Chardonnay 2005","wine12":"Montana New Zealand Sauvignon Blanc 2006"},{"month":"January","year":2007,"commonGrape":"Syrah","wine1":"Paul Mas Syrah Vin de Pays d'Oc","wine2":"St Hallett Blackwell Barossa Shiraz","wine3":"Chapoutier's Hermitage","commonLink":"Sémillon & Sauvignon Blanc (style)","wine4":"Dry white Bordeaux","wine5":"Sauternes","wine6":"Australian Semillon/Sauv Blanc Blend","q3Theme":"Quality assessment of Mosel Riesling","wine7":"Oberemmeler Hutte Spätlese 1998","wine8":"Waitrose Mosel Riesling QbA 2005","wine9":"Dr Loosen Bernkasteler Lay Kabinett QmP 2005","q4Theme":"mixed bag - red","wine10":"Chilean Cabernet Sauvignon","wine11":"South African Pinotage","wine12":"Fontanafredda Barolo"},{"month":"June","year":2006,"commonGrape":"Sauvignon Blanc","wine1":"Domaine Vacheron Sancerre 2004","wine2":"Mondavi Fume Blanc 2003","wine3":"Kim Crawford Marlborough Sauvignon Blanc 2005","commonLink":"Italy","wine4":"Chianti Classico 2001","wine5":"Tedeschi's Amarone della Valpolicella 2001","wine6":"simple fruity Dolcetto","q3Theme":"Quality assessment of Rioja","wine7":"CVNE Gran Reserva","wine8":"Crianza (2005)","wine9":"Medium priced Reserva","q4Theme":"mixed bag - white wines","wine10":"Chilean Chardonnay","wine11":"Australian Riesling","wine12":"Alsace Gewurztraminer"},{"month":"January","year":2006,"commonGrape":"Cabernet Sauvignon","wine1":"Wynn's Coonawarra Estate 2000","wine2":"Chateau Cantelys Pessac-Leognan 1998","wine3":"Mondavi Oakville Napa Valley 1999","commonLink":"botrytis (style)","wine4":"Sauternes (1997)","wine5":"Coteaux du Layon","wine6":"Heavily botrytised Semillon from Australia","q3Theme":"Quality assessment of Viognier","wine7":"Pierre Gaillard's Condrieu","wine8":"inexpensive Vin de Pays d'Oc Viognier","wine9":"medium-priced California Viognier","q4Theme":"mixed bag - red","wine10":"Beaujolais Villages","wine11":"Sonoma County Old Vine Zinfandel","wine12":"Conterno Barolo"},{"month":"June","year":2005,"commonGrape":"Pinot Noir","wine1":"Louis Latour Marsannay 2000","wine2":"Vosne-Romanée 2001","wine3":"Sylvain Cathiard / Isabel Vineyards Marlborough Pinot Noir 2003","commonLink":"cool climate (style)","wine4":"NZ Sauvignon Blanc","wine5":"Chablis","wine6":"Mosel Riesling","q3Theme":"Quality assessment of Pinotage","wine7":"L'Avenir Estate Stellenbosch Pinotage 2002 (£15)","wine8":"Graham Beck Coastal Region Pinotage 2003 (£7)","wine9":"Ruitersvlei Paarl Pinotage 2004 (£6)","q4Theme":"mixed bag - white wines","wine10":"Argentinian Torrontés","wine11":"Tokaji Aszú 5 Puttonyos","wine12":"Retsina"},{"month":"January","year":2005,"commonGrape":"Pinot Grigio","wine1":"Banfi's Pinot Grigio 2003","wine2":"Domaines Schlumberger Grand Cru Pinot Gris","wine3":"Kendermann's Pinot Grigio 2003 (Rheinhessen)","commonLink":"Bordeaux (style)","wine4":"Bordeaux Rouge","wine5":"Château-bottled Bordeaux","wine6":"3rd growth Margaux (£42)","q3Theme":"Quality assessment of Sangiovese","wine7":"good quality Chianti Classico (Barone Ricasoli)","wine8":"simple Sangiovese","wine9":"top quality Brunello di Montalcino","q4Theme":"mixed bag - white wines","wine10":"Mosel Riesling Spätlese QmP","wine11":"Muscadet Sur Lie","wine12":"Barossa Semillon"}];
+
+function wineLines(raw) {
+  if (!raw) return ['—'];
+  const parts = raw.split('\n').map(s => s.trim()).filter(Boolean);
+  return parts;
+}
+
+function renderWineItem(num, raw) {
+  const lines = wineLines(raw);
+  const region = lines.length > 1 ? lines[0] : '';
+  const name = lines.length > 1 ? lines.slice(1).join(' ') : lines[0];
+  return `<div class="wine-item">
+    <span class="wine-num">${num}</span>
+    <div class="wine-text">${region ? `<div class="wine-region">${escHtml(region)}</div>` : ''}
+    <div class="wine-name">${escHtml(name)}</div></div>
+  </div>`;
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let currentView = 'card';
+let filtered = [...RAW];
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('btnCard').classList.toggle('active', v==='card');
+  document.getElementById('btnTable').classList.toggle('active', v==='table');
+  render();
+}
+
+function buildFilters() {
+  const grapes = [...new Set(RAW.map(r=>r.commonGrape).filter(Boolean))].sort();
+  const years = [...new Set(RAW.map(r=>r.year).filter(Boolean))].sort((a,b)=>b-a);
+  const gs = document.getElementById('filterGrape');
+  grapes.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; gs.appendChild(o); });
+  const ys = document.getElementById('filterYear');
+  years.forEach(y => { const o=document.createElement('option'); o.value=y; o.textContent=y; ys.appendChild(o); });
+}
+
+function applyFilters() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const grape = document.getElementById('filterGrape').value;
+  const year = document.getElementById('filterYear').value;
+  filtered = RAW.filter(r => {
+    if (grape && r.commonGrape !== grape) return false;
+    if (year && String(r.year) !== year) return false;
+    if (q) {
+      const blob = Object.values(r).join(' ').toLowerCase();
+      if (!blob.includes(q)) return false;
+    }
+    return true;
+  });
+  render();
+}
+
+function render() {
+  const out = document.getElementById('output');
+  document.getElementById('count').textContent = `${filtered.length} sitting${filtered.length!==1?'s':''}`;
+  if (!filtered.length) {
+    out.innerHTML = `<div class="empty"><svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2" fill="none"/><line x1="16" y1="16" x2="32" y2="32" stroke="currentColor" stroke-width="2"/></svg><p>No results found</p></div>`;
+    return;
+  }
+  if (currentView === 'card') renderCards(out);
+  else renderTable(out);
+}
+
+function renderCards(out) {
+  out.innerHTML = `<div class="grid">${filtered.map(r => {
+    const sitting = `<span>${escHtml(r.month)}</span> ${r.year}`;
+    return `<div class="card">
+      <div class="card-header"><span class="sitting">${sitting}</span></div>
+      <div class="card-body">
+        <div class="flight">
+          <div class="flight-header">Paper 1 · Wines 1–3 <span class="flight-theme">Common grape: ${escHtml(r.commonGrape||'—')}</span></div>
+          <div class="flight-wines">
+            ${renderWineItem('1', r.wine1)}${renderWineItem('2', r.wine2)}${renderWineItem('3', r.wine3)}
+          </div>
+        </div>
+        <div class="flight">
+          <div class="flight-header">Paper 1 · Wines 4–6 <span class="flight-theme">Common link: ${escHtml(r.commonLink||'—')}</span></div>
+          <div class="flight-wines">
+            ${renderWineItem('4', r.wine4)}${renderWineItem('5', r.wine5)}${renderWineItem('6', r.wine6)}
+          </div>
+        </div>
+        <div class="flight">
+          <div class="flight-header">Paper 2 · Q3 · Wines 7–9 <span class="flight-theme">${escHtml(r.q3Theme||'—')}</span></div>
+          <div class="flight-wines">
+            ${renderWineItem('7', r.wine7)}${renderWineItem('8', r.wine8)}${renderWineItem('9', r.wine9)}
+          </div>
+        </div>
+        <div class="flight">
+          <div class="flight-header">Paper 2 · Q4 · Wines 10–12 <span class="flight-theme">${escHtml(r.q4Theme||'—')}</span></div>
+          <div class="flight-wines">
+            ${renderWineItem('10', r.wine10)}${renderWineItem('11', r.wine11)}${renderWineItem('12', r.wine12)}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderTable(out) {
+  const rows = filtered.map(r => `<tr>
+    <td class="sitting">${escHtml(r.month)} ${r.year}</td>
+    <td class="theme">${escHtml(r.commonGrape||'')}</td>
+    <td>${escHtml(r.wine1||'')} / ${escHtml(r.wine2||'')} / ${escHtml(r.wine3||'')}</td>
+    <td class="theme">${escHtml(r.commonLink||'')}</td>
+    <td>${escHtml(r.wine4||'')} / ${escHtml(r.wine5||'')} / ${escHtml(r.wine6||'')}</td>
+    <td class="theme">${escHtml(r.q3Theme||'')}</td>
+    <td>${escHtml(r.wine7||'')} / ${escHtml(r.wine8||'')} / ${escHtml(r.wine9||'')}</td>
+    <td class="theme">${escHtml(r.q4Theme||'')}</td>
+  </tr>`).join('');
+  out.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>Sitting</th><th>Common Grape</th><th>Wines 1–3</th>
+      <th>Common Link</th><th>Wines 4–6</th>
+      <th>Q3 Theme</th><th>Wines 7–9</th><th>Q4 Theme</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+buildFilters();
+document.getElementById('search').addEventListener('input', applyFilters);
+document.getElementById('filterGrape').addEventListener('change', applyFilters);
+document.getElementById('filterYear').addEventListener('change', applyFilters);
+applyFilters();
+</script>
+</body>
+</html>
